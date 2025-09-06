@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Ticket Update Form</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-button {
+            padding: 10px 20px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .control-button:hover {
+            border-color: #4f46e5;
+            background: #f3f4f6;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .ticket-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .ticket-table th {
+            background: #f8fafc;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .ticket-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+        }
+
+        .ticket-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .ticket-table input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .ticket-table input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+
+        .id-cell {
+            width: 80px;
+            text-align: center;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .name-cell {
+            width: 200px;
+            min-width: 150px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .ticket-cell {
+            width: 200px;
+            min-width: 150px;
+        }
+
+        .submit-button {
+            width: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .submit-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .submit-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .response {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .response.success {
+            background: #d1fae5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+
+        .response.error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .stats {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #0c4a6e;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .form-container {
+                padding: 20px;
+            }
+
+            .ticket-cell {
+                width: 150px;
+                min-width: 120px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Batch Ticket Update Manager</h1>
+            <p>チケット数を一括更新</p>
+        </div>
+
+        <div class="form-container">
+            <div class="stats" id="stats">
+                入力済み: 0 エントリー
+            </div>
+
+            <div class="table-container">
+                <table class="ticket-table">
+                    <thead>
+                        <tr>
+                            <th class="id-cell">ID</th>
+                            <th class="name-cell">ユーザー名</th>
+                            <th class="ticket-cell">チケット数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticketTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <button class="submit-button" id="submitButton" onclick="updateAllTickets()">
+                全てのチケット数を更新
+            </button>
+
+            <div id="response"></div>
+        </div>
+    </div>
+
+    <script>
+        var isLoading = false;
+        var tickets = [];
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadTickets();
+        });
+
+        function loadTickets() {
+            showResponse('チケット情報を読み込み中...', true);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'http://localhost:3000/api/users', true);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            tickets = JSON.parse(xhr.responseText);
+                            generateTable();
+                            updateStats();
+                            showResponse('', false);
+                        } catch (e) {
+                            showResponse('❌ チケットデータの解析に失敗しました。', false);
+                        }
+                    } else {
+                        showResponse('❌ チケット情報の取得に失敗しました: ' + xhr.status + ' ' + xhr.statusText, false);
+                        generateEmptyTable();
+                    }
+                }
+            };
+
+            xhr.onerror = function () {
+                showResponse('❌ ネットワークエラー: チケット情報を取得できませんでした。', false);
+                generateEmptyTable();
+            };
+
+            xhr.send();
+        }
+
+        function generateTable() {
+            var tbody = document.getElementById('ticketTableBody');
+            tbody.innerHTML = '';
+
+            if (tickets.length === 0) {
+                generateEmptyTable();
+                return;
+            }
+
+            tickets.forEach(function (ticket) {
+                var row = document.createElement('tr');
+
+                // ID列
+                var idCell = document.createElement('td');
+                idCell.className = 'id-cell';
+                idCell.textContent = ticket.id;
+
+                // 名前列
+                var nameCell = document.createElement('td');
+                nameCell.className = 'name-cell';
+                nameCell.textContent = ticket.user_name;
+
+                // チケット数列
+                var ticketCell = document.createElement('td');
+                ticketCell.className = 'ticket-cell';
+                var ticketInput = document.createElement('input');
+                ticketInput.type = 'number';
+                ticketInput.min = '0';
+                ticketInput.id = ticket.id;
+                ticketInput.value = ticket.ticket || '';
+                ticketInput.addEventListener('input', updateStats);
+                ticketCell.appendChild(ticketInput);
+
+                row.appendChild(idCell);
+                row.appendChild(nameCell);
+                row.appendChild(ticketCell);
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function generateEmptyTable() {
+            var tbody = document.getElementById('ticketTableBody');
+            tbody.innerHTML = '';
+
+            for (var i = 1; i <= 10; i++) {
+                var row = document.createElement('tr');
+
+                var idCell = document.createElement('td');
+                idCell.className = 'id-cell';
+                idCell.textContent = i;
+
+                var nameCell = document.createElement('td');
+                nameCell.className = 'name-cell';
+                nameCell.textContent = 'チケット' + i;
+
+                var ticketCell = document.createElement('td');
+                ticketCell.className = 'ticket-cell';
+                var ticketInput = document.createElement('input');
+                ticketInput.type = 'number';
+                ticketInput.min = '0';
+                ticketInput.id = 'ticket_' + i;
+                ticketInput.placeholder = 'チケット数';
+                ticketInput.addEventListener('input', updateStats);
+                ticketCell.appendChild(ticketInput);
+
+                row.appendChild(idCell);
+                row.appendChild(nameCell);
+                row.appendChild(ticketCell);
+
+                tbody.appendChild(row);
+            }
+            updateStats();
+        }
+
+        function updateStats() {
+            var count = 0;
+            var totalEntries = tickets.length;
+
+            if (tickets.length > 0) {
+                tickets.forEach(function (ticket) {
+                    var ticketInput = document.getElementById(ticket.id);
+                    if (ticketInput && ticketInput.value.trim()) {
+                        count++;
+                    }
+                });
+            }
+
+            document.getElementById('stats').textContent = '入力済み: ' + count + '/' + totalEntries + ' エントリー';
+        }
+
+        function showResponse(message, isSuccess, data) {
+            var responseDiv = document.getElementById('response');
+
+            if (!message) {
+                responseDiv.innerHTML = '';
+                return;
+            }
+
+            if (isSuccess) {
+                responseDiv.className = 'response success';
+            } else {
+                responseDiv.className = 'response error';
+            }
+            responseDiv.innerHTML = message;
+
+            if (data) {
+                var pre = document.createElement('pre');
+                pre.style.marginTop = '10px';
+                pre.style.background = '#f3f4f6';
+                pre.style.padding = '10px';
+                pre.style.borderRadius = '4px';
+                pre.style.fontSize = '12px';
+                pre.style.overflow = 'auto';
+                pre.textContent = JSON.stringify(data, null, 2);
+                responseDiv.appendChild(pre);
+            }
+        }
+
+        function setLoading(loading) {
+            isLoading = loading;
+            var button = document.getElementById('submitButton');
+
+            if (loading) {
+                button.disabled = true;
+                button.innerHTML = '<div class="loading"><div class="spinner"></div>送信中...</div>';
+            } else {
+                button.disabled = false;
+                button.innerHTML = '全てのチケット数を更新';
+            }
+        }
+
+        function updateAllTickets() {
+            if (isLoading) return;
+
+            var ticketsToUpdate = [];
+            var emptyCount = 0;
+
+            tickets.forEach(function (ticket) {
+                var ticketInput = document.getElementById(ticket.id);
+                if (ticketInput) {
+                    var ticketValue = ticketInput.value.trim();
+                    if (ticketValue) {
+                        var ticketNumber = parseInt(ticketValue);
+                        if (!isNaN(ticketNumber) && ticketNumber >= 0) {
+                            ticketsToUpdate.push({
+                                id: ticket.id,
+                                ticket: ticketNumber
+                            });
+                        }
+                    } else {
+                        emptyCount++;
+                    }
+                }
+            });
+
+
+            if (ticketsToUpdate.length === 0) {
+                showResponse('更新するチケットがありません。少なくとも1つのチケット数を入力してください。', false);
+                return;
+            }
+
+            var requestData = {
+                tickets: ticketsToUpdate
+            };
+
+            setLoading(true);
+            showResponse('', false);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('PUT', 'http://localhost:3000/api/ticket/sales', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    setLoading(false);
+
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        var responseData = null;
+                        try {
+                            if (xhr.responseText) {
+                                responseData = JSON.parse(xhr.responseText);
+                            }
+                        } catch (e) {
+                            // JSON parsing failed, but that's ok for 204 responses
+                        }
+
+                        showResponse(
+                            '✅ ' + ticketsToUpdate.length + '件のチケット数を正常に更新しました。',
+                            true,
+                            responseData
+                        );
+                    } else {
+                        var errorData = null;
+                        try {
+                            if (xhr.responseText) {
+                                errorData = JSON.parse(xhr.responseText);
+                            }
+                        } catch (e) {
+                            // JSON parsing failed
+                        }
+
+                        showResponse(
+                            '❌ エラー: ' + xhr.status + ' ' + xhr.statusText,
+                            false,
+                            errorData
+                        );
+                    }
+                }
+            };
+
+            xhr.onerror = function () {
+                setLoading(false);
+                showResponse('❌ ネットワークエラーが発生しました。', false);
+            };
+
+            xhr.send(JSON.stringify(requestData));
+        }
+    </script>
+</body>
+
+</html>
