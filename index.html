@@ -290,7 +290,7 @@
             showResponse('チケット情報を読み込み中...', true);
 
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', 'http://localhost:3000/api/users', true);
+            xhr.open('GET', 'https://msmvpwtawm.ap-northeast-1.awsapprunner.com/api/users', true);
 
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4) {
@@ -305,14 +305,12 @@
                         }
                     } else {
                         showResponse('❌ チケット情報の取得に失敗しました: ' + xhr.status + ' ' + xhr.statusText, false);
-                        generateEmptyTable();
                     }
                 }
             };
 
             xhr.onerror = function () {
                 showResponse('❌ ネットワークエラー: チケット情報を取得できませんでした。', false);
-                generateEmptyTable();
             };
 
             xhr.send();
@@ -321,11 +319,6 @@
         function generateTable() {
             var tbody = document.getElementById('ticketTableBody');
             tbody.innerHTML = '';
-
-            if (tickets.length === 0) {
-                generateEmptyTable();
-                return;
-            }
 
             tickets.forEach(function (ticket) {
                 var row = document.createElement('tr');
@@ -347,7 +340,7 @@
                 ticketInput.type = 'number';
                 ticketInput.min = '0';
                 ticketInput.id = ticket.id;
-                ticketInput.value = ticket.ticket || '';
+                ticketInput.value = ticket.ticket;
                 ticketInput.addEventListener('input', updateStats);
                 ticketCell.appendChild(ticketInput);
 
@@ -357,40 +350,6 @@
 
                 tbody.appendChild(row);
             });
-        }
-
-        function generateEmptyTable() {
-            var tbody = document.getElementById('ticketTableBody');
-            tbody.innerHTML = '';
-
-            for (var i = 1; i <= 10; i++) {
-                var row = document.createElement('tr');
-
-                var idCell = document.createElement('td');
-                idCell.className = 'id-cell';
-                idCell.textContent = i;
-
-                var nameCell = document.createElement('td');
-                nameCell.className = 'name-cell';
-                nameCell.textContent = 'チケット' + i;
-
-                var ticketCell = document.createElement('td');
-                ticketCell.className = 'ticket-cell';
-                var ticketInput = document.createElement('input');
-                ticketInput.type = 'number';
-                ticketInput.min = '0';
-                ticketInput.id = 'ticket_' + i;
-                ticketInput.placeholder = 'チケット数';
-                ticketInput.addEventListener('input', updateStats);
-                ticketCell.appendChild(ticketInput);
-
-                row.appendChild(idCell);
-                row.appendChild(nameCell);
-                row.appendChild(ticketCell);
-
-                tbody.appendChild(row);
-            }
-            updateStats();
         }
 
         function updateStats() {
@@ -488,7 +447,7 @@
             showResponse('', false);
 
             var xhr = new XMLHttpRequest();
-            xhr.open('PUT', 'http://localhost:3000/api/ticket/sales', true);
+            xhr.open('PUT', 'https://msmvpwtawm.ap-northeast-1.awsapprunner.com/api/ticket/sales', true);
             xhr.setRequestHeader('Content-Type', 'application/json');
 
             xhr.onreadystatechange = function () {
