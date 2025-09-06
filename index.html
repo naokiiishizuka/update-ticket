@@ -124,6 +124,11 @@
             box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
         }
 
+        .ticket-table input.changed {
+            border-color: #f59e0b;
+            background-color: #fef3c7;
+        }
+
         .id-cell {
             width: 80px;
             text-align: center;
@@ -271,7 +276,7 @@
             </div>
 
             <button class="submit-button" id="submitButton" onclick="updateAllTickets()">
-                全てのチケット数を更新
+                変更されたチケット数を更新
             </button>
 
             <div id="response"></div>
@@ -281,6 +286,7 @@
     <script>
         var isLoading = false;
         var tickets = [];
+        var originalTickets = {}; // 元の値を保存するためのオブジェクト
 
         document.addEventListener('DOMContentLoaded', function () {
             loadTickets();
@@ -297,6 +303,11 @@
                     if (xhr.status >= 200 && xhr.status < 300) {
                         try {
                             tickets = JSON.parse(xhr.responseText);
+                            // 元の値を保存
+                            originalTickets = {};
+                            tickets.forEach(function (ticket) {
+                                originalTickets[ticket.id] = ticket.ticket;
+                            });
                             generateTable();
                             updateStats();
                             showResponse('', false);
@@ -341,7 +352,10 @@
                 ticketInput.min = '0';
                 ticketInput.id = ticket.id;
                 ticketInput.value = ticket.ticket;
-                ticketInput.addEventListener('input', updateStats);
+                ticketInput.addEventListener('input', function () {
+                    updateInputStyle(this);
+                    updateStats();
+                });
                 ticketCell.appendChild(ticketInput);
 
                 row.appendChild(idCell);
@@ -352,20 +366,38 @@
             });
         }
 
+        function updateInputStyle(input) {
+            var originalValue = originalTickets[input.id];
+            var currentValue = parseInt(input.value) || 0;
+
+            if (currentValue !== originalValue) {
+                input.classList.add('changed');
+            } else {
+                input.classList.remove('changed');
+            }
+        }
+
         function updateStats() {
-            var count = 0;
+            var changedCount = 0;
+            var filledCount = 0;
             var totalEntries = tickets.length;
 
             if (tickets.length > 0) {
                 tickets.forEach(function (ticket) {
                     var ticketInput = document.getElementById(ticket.id);
                     if (ticketInput && ticketInput.value.trim()) {
-                        count++;
+                        filledCount++;
+                        var currentValue = parseInt(ticketInput.value) || 0;
+                        var originalValue = originalTickets[ticket.id];
+                        if (currentValue !== originalValue) {
+                            changedCount++;
+                        }
                     }
                 });
             }
 
-            document.getElementById('stats').textContent = '入力済み: ' + count + '/' + totalEntries + ' エントリー';
+            document.getElementById('stats').textContent =
+                '入力済み: ' + filledCount + '/' + totalEntries + ' エントリー | 変更済み: ' + changedCount + ' エントリー';
         }
 
         function showResponse(message, isSuccess, data) {
@@ -405,7 +437,7 @@
                 button.innerHTML = '<div class="loading"><div class="spinner"></div>送信中...</div>';
             } else {
                 button.disabled = false;
-                button.innerHTML = '全てのチケット数を更新';
+                button.innerHTML = '変更されたチケット数を更新';
             }
         }
 
@@ -413,7 +445,7 @@
             if (isLoading) return;
 
             var ticketsToUpdate = [];
-            var emptyCount = 0;
+            var unchangedCount = 0;
 
             tickets.forEach(function (ticket) {
                 var ticketInput = document.getElementById(ticket.id);
@@ -421,21 +453,29 @@
                     var ticketValue = ticketInput.value.trim();
                     if (ticketValue) {
                         var ticketNumber = parseInt(ticketValue);
+                        var originalValue = originalTickets[ticket.id];
+
                         if (!isNaN(ticketNumber) && ticketNumber >= 0) {
-                            ticketsToUpdate.push({
-                                id: ticket.id,
-                                ticket: ticketNumber
-                            });
+                            // 元の値と異なる場合のみ更新対象に追加
+                            if (ticketNumber !== originalValue) {
+                                ticketsToUpdate.push({
+                                    id: ticket.id,
+                                    ticket: ticketNumber
+                                });
+                            } else {
+                                unchangedCount++;
+                            }
                         }
-                    } else {
-                        emptyCount++;
                     }
                 }
             });
 
-
             if (ticketsToUpdate.length === 0) {
-                showResponse('更新するチケットがありません。少なくとも1つのチケット数を入力してください。', false);
+                if (unchangedCount > 0) {
+                    showResponse('変更されたチケットがありません。元の値と異なる値を入力してください。', false);
+                } else {
+                    showResponse('更新するチケットがありません。少なくとも1つのチケット数を入力してください。', false);
+                }
                 return;
             }
 
@@ -464,11 +504,23 @@
                             // JSON parsing failed, but that's ok for 204 responses
                         }
 
-                        showResponse(
-                            '✅ ' + ticketsToUpdate.length + '件のチケット数を正常に更新しました。',
-                            true,
-                            responseData
-                        );
+                        // 更新が成功したら、元の値を更新
+                        ticketsToUpdate.forEach(function (updatedTicket) {
+                            originalTickets[updatedTicket.id] = updatedTicket.ticket;
+                            var input = document.getElementById(updatedTicket.id);
+                            if (input) {
+                                input.classList.remove('changed');
+                            }
+                        });
+
+                        updateStats();
+
+                        var message = '✅ ' + ticketsToUpdate.length + '件のチケット数を正常に更新しました。';
+                        if (unchangedCount > 0) {
+                            message += ' (' + unchangedCount + '件は変更がないためスキップされました)';
+                        }
+
+                        showResponse(message, true, responseData);
                     } else {
                         var errorData = null;
                         try {
